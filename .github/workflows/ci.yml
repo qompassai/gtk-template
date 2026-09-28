@@ -1,0 +1,24 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Required files present
+        run: |
+          test -f LICENSE
+          test -f README.md
+          test -f CHANGELOG.md
+          grep -q "Apache License" LICENSE
+      - name: No placeholder leaks
+        # The template repos themselves keep {{PLACEHOLDERS}}. Anything
+        # instantiated from them must have every placeholder replaced.
+        run: |
+          case "${{ github.repository }}" in
+            qompassai/*-template|qompassai/mojo-project-template)
+              echo "template repo: placeholders allowed" ;;
+            *)
+              ! grep -rn "{{" README.md CITATION.cff ||                 (echo "unreplaced placeholder found" && exit 1) ;;
+          esac
